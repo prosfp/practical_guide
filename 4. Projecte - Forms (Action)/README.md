@@ -1,18 +1,108 @@
 ### **Introducció a Forms a Remix**
 
-Els **forms (formularis)** són una part central de Remix i aprofiten els principis bàsics del web per gestionar la **mutació de dades**. Remix treballa amb formularis HTML tradicionals i els combina amb **tecnologia moderna** per oferir una experiència d'usuari fluida i senzilla.
+Els **formularis (forms)** són una peça fonamental a Remix, ja que integren els **principis bàsics del web** amb **tecnologia moderna** per gestionar la mutació de dades. Remix aprofita la simplicitat dels formularis HTML tradicionals i els combina amb funcionalitats modernes com el `fetch` i la revalidació automàtica, oferint una experiència més àgil i accessible.
+
+---
+
+#### **1. HTML Tradicional: Un Model Basat en Pàgines Completes**
+En el web tradicional, l'enviament d'un formulari desencadenava una petició HTTP directa al servidor, seguida d'una **recarrega completa de la pàgina**. Això comportava:
+
+- **Interrupcions** per a l'usuari (temps de càrrega).
+- Dificultats per gestionar errors i estat del formulari.
+- Necessitat de dissenyar fluxos més lents i menys interactius.
+
+##### **Exemple de Formulari HTML Tradicional**
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traditional HTML Form</title>
+</head>
+<body>
+  <h1>Submit a Note</h1>
+  <form action="/submit-note" method="post">
+    <label for="title">Title:</label>
+    <input type="text" id="title" name="title" required>
+    <br>
+    <label for="content">Content:</label>
+    <textarea id="content" name="content" required></textarea>
+    <br>
+    <button type="submit">Save</button>
+  </form>
+</body>
+</html>
+```
+
+##### **Flux d'Execució (Sense JavaScript)**
+1. **Enviament del Formulari:**
+   - El navegador envia una petició HTTP (`POST`) a l'URL especificat a l'atribut `action`.
+   - Les dades del formulari es serialitzen automàticament (`application/x-www-form-urlencoded` o `multipart/form-data`).
+
+2. **Resposta del Servidor:**
+   - El servidor processa les dades i retorna una resposta.
+   - La pàgina es recarrega completament, mostrant el contingut resultant.
+
+##### **Limitacions del Model Tradicional**
+- **Pèrdua d'estat:** Si hi ha errors, les dades introduïdes es perden.
+- **Lentitud:** Cada acció implica una recàrrega completa.
+- **Manca de feedback:** L'usuari no rep indicacions immediates (com ara "càrrega en curs").
+
+---
+
+#### **2. Remix: L'Enfocament Modern**
+Remix conserva la senzillesa dels formularis HTML tradicionals però elimina les seves limitacions:
+
+1. **Intercepta el comportament predeterminat:**
+   - Quan un formulari s'envia, Remix utilitza **client-side fetch** per evitar la recàrrega de la pàgina.
+   - Això fa que l'experiència sigui més ràpida i fluida.
+
+2. **Revalidació automàtica:**
+   - Després d'una acció, Remix torna a executar els `loaders` per assegurar que la informació de la pàgina estigui actualitzada.
+
+3. **Accessibilitat nativa:**
+   - Sense JavaScript, els formularis funcionen com en el web tradicional, assegurant compatibilitat i degradació progressiva.
+
+##### **Exemple amb Remix**
+```tsx
+<Form method="post">
+  <label htmlFor="title">Title:</label>
+  <input type="text" id="title" name="title" required />
+  <br />
+  <label htmlFor="content">Content:</label>
+  <textarea id="content" name="content" required></textarea>
+  <br />
+  <button type="submit">Save</button>
+</Form>
+```
+
+##### **Funció `action` Associada**
+```tsx
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const note = {
+    title: formData.get("title"),
+    content: formData.get("content"),
+  };
+
+  // Processa les dades (per exemple, desa-les en una base de dades)
+  return redirect("/notes");
+};
+```
+
+##### **Avantatges del Model Remix**
+- **Evita recàrregues:** Tot es gestiona amb fetch i actualització parcial.
+- **Errors més clars:** Pots retornar errors al formulari sense perdre l'estat.
+- **Millor experiència d'usuari:** Feedback instantani amb spinners o indicadors visuals.
 
 ---
 
 ### **Principals Característiques dels Forms a Remix**
 
-1. **Emulació de navegació HTML:**
-   - Quan un formulari s'envia, Remix evita el comportament predeterminat del navegador i gestiona la petició amb **client-side fetch**.
-   - Aquest enfocament simplifica el codi, eliminant la necessitat de gestionar manualment estats amb `useState` o `useEffect`.
-
-2. **Propietat `method`:**
-   - Pots utilitzar `GET`, `POST`, `PUT` o `DELETE` segons l'acció que necessitis.
-   - Exemple:
+1. **Propietat `method`:**
+   - Indica el tipus de petició HTTP (`GET`, `POST`, `PUT`, `DELETE`).
+   - Exemples:
      ```tsx
      <Form method="post">
        <input type="text" name="note" placeholder="Write a note" />
@@ -20,81 +110,26 @@ Els **forms (formularis)** són una part central de Remix i aprofiten els princi
      </Form>
      ```
 
-3. **Actions i Loaders:**
-   - **`action`**: Gestiona la lògica quan s'envien dades (POST, PUT, etc.).
-   - **`loader`**: Carrega dades abans de renderitzar la pàgina.
-   - Exemple bàsic d'un `action`:
-     ```tsx
-     export const action = async ({ request }: ActionArgs) => {
-       const formData = await request.formData();
-       const note = formData.get("note");
-       // Guarda la nota o processa la lògica
-       return redirect("/notes");
-     };
-     ```
+2. **Actions i Loaders:**
+   - **`action`**: Processa les dades enviades des del formulari.
+   - **`loader`**: Carrega les dades necessàries abans de renderitzar la pàgina.
 
-4. **Revalidació automàtica:**
-   - Després d'una acció (`action`), Remix torna a executar els `loaders` per assegurar que les dades a la pàgina estiguin actualitzades.
+3. **Degradació Progressiva:**
+   - Els formularis funcionen tant amb **JavaScript habilitat** com deshabilitat.
 
-5. **Degradació progressiva (Progressive Enhancement):**
-   - Els formularis funcionen tant amb **JavaScript habilitat** com deshabilitat. Sense JavaScript, el navegador enviarà una petició HTTP tradicional.
+4. **Revalidació Automàtica:**
+   - Després d'una `action`, Remix executa els `loaders` per garantir que les dades estiguin actualitzades.
 
 ---
 
-### **Exemple Bàsic d'un Form a Remix**
+### **Comparativa**
 
-```tsx
-import { Form } from "@remix-run/react";
-
-export const action = async ({ request }: ActionArgs) => {
-  const formData = await request.formData();
-  const note = formData.get("note");
-  console.log("Nova nota:", note);
-  return null;
-};
-
-export default function NotesPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Create a New Note</h1>
-      <Form method="post" className="space-y-4">
-        <input
-          type="text"
-          name="note"
-          placeholder="Write your note here"
-          className="border rounded-lg p-2 w-full"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600"
-        >
-          Save Note
-        </button>
-      </Form>
-    </div>
-  );
-}
-```
-
----
-
-### **Flux de treball del Form a Remix**
-1. **Renderització inicial:**
-   - Es carrega la pàgina amb el formulari. El component es renderitza amb els loaders predefinits (si n'hi ha).
-2. **Enviament del formulari:**
-   - Quan l'usuari fa clic al botó "Submit", les dades del formulari s'envien al servidor.
-3. **Execució de l'`action`:**
-   - Les dades s'envien a la funció `action` de la ruta, on es processa la lògica del backend.
-4. **Revalidació i renderització:**
-   - Després de l'acció, Remix revalida les dades mitjançant els loaders per actualitzar el contingut de la pàgina.
-
----
-
-### **Punts Clau a Recordar**
-- **Evita la necessitat de `useState` per manejar inputs:** Remix gestiona automàticament la serialització del formulari.
-- **Automàticament funciona amb navegadors sense JavaScript.**
-- És compatible amb qualsevol mètode HTTP (`GET`, `POST`, `PUT`, `DELETE`).
-- Les accions són més senzilles d'escriure perquè Remix utilitza les APIs natives del web, com `request.formData()`.
+| Funcionalitat           | HTML Tradicional                          | Remix                                      |
+|-------------------------|-------------------------------------------|--------------------------------------------|
+| Enviament del Formulari | Petició completa HTTP + recàrrega         | Fetch amb actualització parcial            |
+| Maneig d'Errors         | Recarrega completa amb errors visuals     | Retorn JSON + gestió elegant d'errors      |
+| Estat del Formulari     | Es perd amb errors                        | Conservat al client                        |
+| Experiència d'Usuari    | Sense indicadors de càrrega               | Fluida i moderna                           |
 
 ---
 
@@ -104,7 +139,7 @@ D'entrada sense haver modificat res si intentes afegir un nou Note a través del
 Tot i aixi Remix per defecte envia una petició POST a la mateixa ruta on està el formulari, en aquest cas `routes/notes.tsx`. Per tant, si volem que el formulari funcioni correctament, hem de definir una funció `action` a la mateixa ruta. Pots veure-ho a través del developer tools del navegador. Veuràs una petició POST a la mateixa ruta on està el formulari.
 
 ```tsx
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const note = formData.get("note");
   console.log("Nova nota:", note);
@@ -112,7 +147,7 @@ export const action = async ({ request }: ActionArgs) => {
 };
 ```
 
-Ens generem "utility Functions" per a la gestió de les notes, així que aquesta funció `action` simplement recull la nova nota i la redirigeix a la pàgina de notes.
+Ens generem "utility Functions" per a la gestió de les notes, així que aquesta funció `action` simplement recull la nova nota i ens redirigim a la pàgina de /notes.
 
 ```tsx
 import fs from "fs/promises";
@@ -232,4 +267,4 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default NotesPage;
 ```
 
-
+Ja tenim la nostra funció `action` implementada. Ara, quan afegim una nova nota, aquesta es guardarà a la nostra base de dades i ens redirigirà a la pàgina de notes (on encara s'han de mostrar les notes!).
