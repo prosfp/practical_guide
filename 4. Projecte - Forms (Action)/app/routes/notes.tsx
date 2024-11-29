@@ -23,11 +23,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // Amb una sola linia de codi, obtenim les dades del formulari
   const formData = await request.formData();
 
-  // const noteData = {
-  //   title: formData.get("title"),
-  //   note: formData.get("content"),
-  // };
-
   // Encara més òptim amb Object.fromEntries que ens permet crear un objecte a partir d'un array de parells clau-valor
   const noteData: Note = {
     id: "",
