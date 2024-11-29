@@ -96,7 +96,7 @@ const NotesPage = (): JSX.Element => {
 
 ---
 
-Anem a veure al nostre codi com ho fem:
+## Anem a veure al nostre codi com ho fem:
 
 Ens generem un component `NoteList` que ens mostrarà una llista de notes. Aquest component rebrà un array de notes i les mostrarà en un format específic.
 
@@ -229,10 +229,24 @@ I ens falta implementar el `loader` per carregar les dades reals de les notes.
 Hem d'afegir tant el `loader` a la pàgina de notes (`notes.tsx`) per carregar les dades de les notes així com
 passar aquestes dades al component `NoteList` com a propietat `notes`.
 
-Compte amb el tipus de dades que passis com a propietat `notes` al component `NoteList` perquè aquestes dades
+Compte amb el tipus de dades que passis com a propietat `notes` al component `NoteList` perquè aquestes dades han de ser les mateixes que retorna el `loader`.
 
 ```tsx
-// Component principal
+// routes/notes.tsx
+// Component principal: NotesPage
+
+// ... Altres imports
+
+// Loader s'executarà sempre que es faci una petició a aquesta ruta del tipus GET. Sempre que aquest
+// component estigui a punt de ser renderitzat, primer s'executarà aquesta funció.
+
+export const loader = async () => {
+  const notes = await getStoredNotes(); // Obté les notes del fitxer JSON
+  return Response.json({ notes }); // Retorna les notes al client
+};
+
+// ... Altres exports
+
 const NotesPage = (): JSX.Element => {
   // Accedeix a les dades carregades pel loader
   const { notes } = useLoaderData<{ notes: Note[] }>();
@@ -249,11 +263,5 @@ const NotesPage = (): JSX.Element => {
 // Tot el que posem aquí serà executat al "server" (o backend) de Remix, i no al
 // client. Això vol dir que no tindrem accés a l'objecte window, per exemple.
 
-// Loader s'executarà sempre que es faci una petició a aquesta ruta del tipus GET. Sempre que aquest
-// component estigui a punt de ser renderitzat, primer s'executarà aquesta funció.
 
-export const loader = async () => {
-  const notes = await getStoredNotes(); // Obté les notes del fitxer JSON
-  return Response.json({ notes }); // Retorna les notes al client
-};
 ```

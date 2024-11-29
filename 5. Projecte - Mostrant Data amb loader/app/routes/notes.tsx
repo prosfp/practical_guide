@@ -11,7 +11,8 @@ import { useLoaderData } from "@remix-run/react";
 
 // Component principal
 const NotesPage = (): JSX.Element => {
-  // Accedeix a les dades carregades pel loader
+  // El hook "useLoaderData" ens permet accedir a les dades carregades pel loader
+  // Tipem les dades amb un objecte que conté les dades que esperem rebre
   const { notes } = useLoaderData<{ notes: Note[] }>();
 
   return (
@@ -28,10 +29,13 @@ const NotesPage = (): JSX.Element => {
 
 // Loader s'executarà sempre que es faci una petició a aquesta ruta del tipus GET. Sempre que aquest
 // component estigui a punt de ser renderitzat, primer s'executarà aquesta funció.
+// El que retornem al loader serà passat com a prop al component principal.
 
 export const loader = async () => {
   const notes = await getStoredNotes(); // Obté les notes del fitxer JSON
-  return Response.json({ notes }); // Retorna les notes al client
+  // Això és el que faríem si no estiguéssim utilitzant Remix:
+  // return new Response(JSON.stringify({ notes }, {headers: {"Content-Type": "application/json"}}));
+  return Response.json({ notes }); // Retornem les notes al component principal. Des de V2 de Remix, Response.json() és una funció que retorna un objecte Response amb el cos de la resposta en format JSON.
 };
 
 // Action s'executarà sempre que es faci una petició a aquesta ruta del tipus POST, PUT o DELETE (no GET).
