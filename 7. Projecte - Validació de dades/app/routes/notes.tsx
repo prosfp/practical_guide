@@ -44,6 +44,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     content: formData.get("content") as string,
   };
 
+  if (!noteData.title || noteData.title.trim().length < 5) {
+    // Aquí no podem fer servir funcions del browser com alert() ja que això està corrent al servidor.
+    // En aquest cas, retornem un missatge d'error amb un codi d'estat 400.
+    return Response.json(
+      { error: "Invalid title - must be at least 5 characters long" },
+      { status: 400 } // Indiquem que és un error del client
+    );
+  }
+
   // Validació bàsica
   if (!noteData.title || !noteData.content) {
     return new Response("Title and content are required", { status: 400 });

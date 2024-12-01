@@ -1,7 +1,8 @@
-import { Form, useNavigation } from "@remix-run/react";
+import { Form, useActionData, useNavigation } from "@remix-run/react";
 
 function NewNote(): JSX.Element {
   const navigation = useNavigation();
+  const actionData = useActionData<{ error?: string }>();
 
   // useNavigation em permet, entre d'altres, saber si estem a la fase de submitting del formulari.
   const isSubmitting = navigation.state === "submitting";
@@ -12,6 +13,11 @@ function NewNote(): JSX.Element {
       id="note-form"
       className="max-w-xl my-12 mx-auto p-8 rounded-lg bg-primary-100 shadow-md text-center"
     >
+      {/* Mostra l'error retornat pel servidor */}
+      {actionData?.error && (
+        <p className="text-red-500 font-semibold mb-4">{actionData.error}</p>
+      )}
+
       <p className="mb-4">
         <label htmlFor="title" className="block text-white font-semibold mb-2">
           Title
