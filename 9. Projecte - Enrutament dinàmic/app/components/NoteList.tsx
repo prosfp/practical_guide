@@ -1,5 +1,6 @@
 import React from "react";
 import { Note } from "../data/notes";
+import { Link } from "@remix-run/react";
 // Aquest component rep una llista de notes com a prop
 const NoteList: React.FC<{ notes: Note[] }> = ({ notes }) => {
   if (!notes || notes.length === 0) {
@@ -18,28 +19,30 @@ const NoteList: React.FC<{ notes: Note[] }> = ({ notes }) => {
             key={note.id}
             className="note bg-white border border-green-300 rounded-md p-4 shadow"
           >
-            <article>
-              <header className="mb-4">
-                <ul className="note-meta flex justify-between text-sm text-gray-500">
-                  <li>#{index + 1}</li>
-                  <li>
-                    <time dateTime={note.id}>
-                      {new Date(note.id).toLocaleDateString("en-US", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </time>
-                  </li>
-                </ul>
-                <h2 className="text-lg font-semibold text-gray-700">
-                  {note.title}
-                </h2>
-              </header>
-              <p className="text-gray-600">{note.content}</p>
-            </article>
+            <Link to={note.id}>
+              <article>
+                <header className="mb-4">
+                  <ul className="note-meta flex justify-between text-sm text-gray-500">
+                    <li>#{index + 1}</li>
+                    <li>
+                      <time dateTime={note.id}>
+                        {new Date(note.id).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </li>
+                  </ul>
+                  <h2 className="text-lg font-semibold text-gray-700">
+                    {note.title}
+                  </h2>
+                </header>
+                <p className="text-gray-600">{note.content}</p>
+              </article>
+            </Link>
           </li>
         ))}
       </ul>

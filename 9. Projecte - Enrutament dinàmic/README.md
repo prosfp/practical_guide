@@ -1,372 +1,229 @@
-### Introducció a la gestió d'errors en l'obtenció de dades
+### **Introducció a les Rutes Dinàmiques i les Rutes Punt-delimitades a Remix**
 
-Quan una aplicació intenta obtenir dades, ja sigui des d'una API, un fitxer o una base de dades, poden sorgir problemes que afectin el bon funcionament de la pàgina. Alguns exemples d'aquests problemes inclouen:
+Remix té un sistema de rutes basat en noms d'arxius que facilita la definició d'URL i estructura de navegació de la teva aplicació. Quan necessites treballar amb **paràmetres dinàmics** o **subrutes** més complexes, Remix introdueix dues eines potents:
 
-1. **Fitxers o recursos no trobats:** Si el fitxer que conté les dades no existeix.
-2. **Errors de format:** Si les dades estan corruptes o no són vàlides (per exemple, JSON mal formatat).
-3. **Problemes de permís o connexió:** Si el servidor no pot accedir a les dades per restriccions de seguretat o fallades de xarxa.
-4. **Excepcions inesperades:** Com errors de codi que impedeixen la correcta lectura de les dades.
+1. **Rutes Dinàmiques (`$param`):**  
+   Aquestes rutes permeten capturar parts variables de l'URL. Per exemple, si tens diferents productes amb ID únics, pots utilitzar rutes dinàmiques per renderitzar una pàgina específica per a cada producte.
 
-Per assegurar-nos que l'aplicació continua funcionant de manera controlada en aquests casos, és fonamental gestionar aquests errors adequadament.
+   Exemple:  
+   - Arxiu: `app/routes/product.$id.tsx`
+   - URL: `/product/123`  
+   Això capturarà el valor `123` i el passarà com a paràmetre `id` al loader o al component.
 
-### Gestió d'errors amb loaders a Remix
+2. **Rutes Punt-delimitades (`.`):**  
+   Aquestes rutes s'utilitzen per definir subrutes relacionades dins d'una mateixa jerarquia. Això és útil per mantenir l'estructura del codi clara i reutilitzar components o dades.
 
-Els loaders a Remix són responsables de carregar dades abans que es renderitzi una pàgina. Quan un loader no pot obtenir les dades per qualsevol motiu, podem:
-
-1. Retornar un error personalitzat al client amb `Response` i un codi d'estat HTTP adequat (`404`, `500`, etc.).
-2. Detectar aquests errors al client i mostrar missatges informatius per a l'usuari.
-
-Aquest enfocament permet manejar situacions inesperades sense que l'aplicació falli completament i proporciona una millor experiència d'usuari.
-
-A continuació, implementarem gestió d'errors al loader per assegurar-nos que qualsevol problema en l'obtenció de dades es reflecteixi de manera clara i útil per als usuaris.
-
-### **Què són els Error Boundaries a Remix?**
-
-Els **Error Boundaries** són un mecanisme per gestionar errors a nivell de ruta o global en una aplicació Remix. Permeten capturar errors tant del **servidor** (en loaders o actions) com del **client** (durant el renderitzat de components React) i mostrar un missatge personalitzat en lloc de trencar l'aplicació.
+   Exemple:  
+   - Arxiu: `app/routes/product.$id.edit.tsx`
+   - URL: `/product/123/edit`  
+   Aquesta estructura permet afegir funcionalitats, com editar un producte, mantenint una jerarquia clara.
 
 ---
 
-### **Com funcionen?**
-
-1. **Per ruta o global**: 
-   - Pots definir un Error Boundary global al fitxer `root.tsx` o específic per a una ruta.
-   - Si no n'hi ha un de definit, Remix utilitza el global.
-
-2. **Captura errors del servidor**:
-   - Errors en loaders o actions (p. ex., fallades d'API) són capturats i mostrats.
-
-3. **React Error Boundaries**:
-   - També captura errors durant el renderitzat o la lògica dels components React.
+### **Quan Utilitzar Rutes Dinàmiques?**
+Les rutes dinàmiques són útils per:
+- Pàgines d'informació específica (productes, usuaris, articles).
+- Gestió de paràmetres variables a l'URL (id, slug, categories).
 
 ---
 
-### **Exemple bàsic**
+### **Quan Utilitzar Rutes Punt-delimitades?**
+Les rutes punt-delimitades són útils per:
+- Crear accions o subfuncionalitats associades a una entitat principal (edit, delete, details).
+- Mantenir una estructura clara dins de la carpeta `routes`.
 
-#### **Error Boundary per ruta**
+---
+
+### Amb les notes
+
+Anem a tractar de mostrar les notes amb tota la seva informació en una sola pàgina. Per això, crearem una ruta dinàmica que capturi l'ID de la nota i la renderitzi amb tota la seva informació.
+
+Primer generem el nou arxiu de ruta dinàmica `app/routes/$noteId.tsx`. Amb aquesta signe de `$` indiquem que és una ruta dinàmica i capturarem el valor de `noteId` com a paràmetre i no com a nom d'arxiu.
+
+De moment crea el nou component de ruta dinàmica amb el següent codi:
+
 ```tsx
-export function ErrorBoundary({ error }: { error: unknown }) {
+// app/routes/$noteId.tsx
+export default function NoteDetailsPage() {
   return (
-    <div>
-      <h1>Error!</h1>
-      <p>{error instanceof Error ? error.message : "Unknown error occurred."}</p>
-      <a href="/">Back to safety</a>
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <nav>
+        <a href="/notes" className="text-green-500 hover:underline">
+          Back to Notes
+        </a>
+      </nav>
+      <h1 className="text-4xl font-bold mb-4">Note Details</h1>
+      <p className="text-lg">Note ID: </p>
     </div>
   );
 }
 ```
 
-#### **Error en un Loader**
+Si ara intentes accedir a qualssevol ruta note-ID, per exemple `/note-1` o `note1` o `noteelquesigui`, veuràs la pàgina de detalls de la nota amb l'ID `1`, com pots veure a la següent imatge:
+
+![Note Details Page](./asset/node-1.png)
+
+Abans de mostrar la informació de la nota, anem també a fer que a la nostra llista, l'element sigui un enllaç que ens porti a la pàgina de detalls de la nota. Per això, modifica el component `NoteListPage` amb el hook `Link` embolcallem tot l'element `li` i afegim la propietat `to` amb la ruta dinàmica `$noteId`. A Remix, si fem servir `Link` amb un valor `to` sense la barra ("slash") inicial, aquesta s'afegeix a la ruta actual.
+
+
 ```tsx
-export const loader: LoaderFunction = async () => {
-  throw new Response("Failed to load data", { status: 500 });
-};
+// app/routes/notes.tsx
+import { Link } from "remix";
+
+...
+      <Link to={note.id}>
+      <article>
+      ...
+      </article>
+      </Link>
+
 ```
 
-Aquest error serà capturat pel **Error Boundary** de la ruta o global, assegurant que l'aplicació no es trenqui.
+Això farà que intenti accedir per exemple a `http://localhost:5173/notes/2024-12-01T14:43:54.217Z`. Fixeu-vos que afegirà la ruta actual `notes` a la ruta dinàmica `2024-12-01T14:43:54.217Z`. Això és perquè la ruta dinàmica no comença amb una barra (`/`), per tant, s'afegeix a la ruta actual.
+
+Per evitar-ho podem modificar el nostre arxiu de rutes dinàmiques per afegir un camp al path `note`. Modifiquem el nom del nostre arxiu amb `note.$noteId.tsx`.
+
+Ara passarà quelcom en el cas de V2 de Remix. Si intentem accedir ara a la ruta dinàmica, com que el nom del component de ruta és `notes.tsx`, aquest s'imposa a qualsevol ruta dinàmica que comenci amb `notes`. Per tant, si intentem accedir a `http://localhost:5173/notes/2024-12-01T14:43:54.217Z`, veurem la pàgina de llistat de notes i no la pàgina de detalls de la nota. Simplement haurem també de modificar aquest arxiu per `notes._index.tsx`. Així aquest només es carregarà quan cridem a `http://localhost:5173/notes/`
+
+#### **Carregant ("Fetching") les dades a la ruta dinàmica**
+
+Els **paràmetres (`params`)** són una de les eines clau en Remix per capturar valors dinàmics des de les rutes. Es fan servir principalment en **loaders** per accedir a parts específiques de l'URL.
 
 ---
 
-### **Punts clau**
-- **Personalització per ruta**: Cada pàgina pot tenir la seva gestió d'errors.
-- **Errors del client i servidor**: Captura problemes d'ambdós costats.
-- **UX millorada**: Mostra missatges elegants sense interrompre tota l'experiència.
+### **Com funciona `params` a Remix?**
 
-### **Canvis en la Gestió d'Errors a Remix v2**
+1. **Definició de la ruta dinàmica:**  
+  Ja hem vist que les definim amb utilitzant el símbol `$` al nom del fitxer dins de la carpeta `routes`.  
+   Per exemple:
+   - Fitxer: `app/routes/notes.$noteId.tsx`
+   - URL: `/notes/123`
+   Això permet capturar `123` com a valor de `noteId`.
 
-[Enallç a la documentació oficial on s'explica](https://remix.run/docs/en/main/start/v2#catchboundary-and-errorboundary)
+2. **Accés als paràmetres amb `params`:**  
+   Remix passa els valors de les rutes dinàmiques al loader a través de l'objecte `params`. Aquests es poden utilitzar per buscar dades específiques.
 
-En versions anteriors de Remix, es diferenciava entre **CatchBoundary** per a errors previstos (com respostes amb estatus HTTP específics) i **ErrorBoundary** per a errors inesperats. A partir de Remix v2, aquesta distinció s'ha simplificat:
+---
 
-- **Eliminació de CatchBoundary**: La funció `CatchBoundary` ha estat eliminada. Ara, tots els errors, tant previstos com inesperats, són gestionats per `ErrorBoundary`.
+### **Explicació del Codi**
 
-- **Unificació de la Gestió d'Errors**: Amb aquesta unificació, `ErrorBoundary` s'encarrega de tots els tipus d'errors, proporcionant una interfície més senzilla per al desenvolupador.
+#### **Loader: Captura i processa els paràmetres**
+```typescript
+// app/routes/notes.$noteId.tsx
+export async function loader({ params }: LoaderFunctionArgs) {
+  const notes = await getStoredNotes(); // Obté totes les notes
 
-### **Implementació de l'ErrorBoundary a Remix v2**
+  // Busca la nota que coincideix amb l'ID de la URL
+  const selectedNote = notes.find((note) => note.id === params.noteId);
 
-Per gestionar errors en una ruta específica, es pot definir una funció `ErrorBoundary` dins del mòdul de la ruta:
+  if (selectedNote) {
+    return { selectedNote }; // Retorna la nota seleccionada
+  } else {
+    // Llança un error si la nota no existeix
+    throw Response.json("Not Found", { status: 404 });
+  }
+}
+```
+- **`params.noteId`:** Aquí accedim al valor dinàmic de la URL (`123` en aquest cas).
+- Es busca dins de la llista de notes utilitzant aquest paràmetre.
+- Si la nota es troba, es retorna al component mitjançant el loader.
+- Si no es troba, es llança un error amb `Response.json`.
 
-```tsx
-export function ErrorBoundary({ error }: { error: Error }) {
+---
+
+#### **Component: Recupera les dades i les renderitza**
+```typescript
+// app/routes/notes.$noteId.tsx
+export default function NoteDetailsPage() {
+  // Recupera les dades carregades pel loader
+  const { selectedNote } = useLoaderData<{ selectedNote: Note }>();
+
   return (
-    <div>
-      <h1>S'ha produït un error!</h1>
-      <p>{error.message}</p>
-      <a href="/">Torna a la pàgina principal</a>
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <nav>
+        <a href="/notes" className="text-green-500 hover:underline">
+          Back to Notes
+        </a>
+      </nav>
+      <h1 className="text-4xl font-bold mb-4">Note Details</h1>
+      <p className="text-lg">Note ID: {selectedNote.id}</p>
+      <p className="text-lg">Title: {selectedNote.title}</p>
+      <p className="text-lg">Content: {selectedNote.content}</p>
     </div>
   );
 }
 ```
+- **`useLoaderData`:** Recupera les dades retornades pel loader.
+- Les dades de la nota seleccionada (`selectedNote`) es mostren al component.
 
-Aquesta funció captura qualsevol error que es produeixi en la ruta corresponent, ja sigui durant la càrrega de dades (`loader`), accions (`action`) o en el renderitzat del component.
+---
 
-### **Avantatges d'aquests Canvis**
+### **Avantatges del Sistema de `params` a Remix**
 
-- **Simplificació**: Redueix la complexitat en la gestió d'errors, ja que no cal diferenciar entre errors previstos i inesperats.
+1. **Dinàmic i eficient:**  
+   Permet manejar rutes dinàmiques de forma simple i flexible.
 
-- **Consistència**: Proporciona una experiència de desenvolupament més coherent, amb un sol mecanisme per a la captura d'errors.
+2. **Integració amb loaders:**  
+   Simplifica la càrrega de dades basades en URL sense haver d'escriure codi addicional al client.
 
-- **Flexibilitat**: Permet personalitzar la resposta a qualsevol tipus d'error en una ubicació centralitzada.
+3. **Gestió d'errors incorporada:**  
+   Errors com notes inexistents es poden gestionar fàcilment amb els Error Boundaries o Catch Boundaries.
+
+Amb aquest sistema, pots gestionar fàcilment rutes dinàmiques com `/notes/:id` o altres escenaris complexos de navegació!
 
 
-Si nosaltres volem tenir el control sobre certs errors, podem llançar-los des del Loader o Action. Per exemple, si no trobem cap nota guardada, podem llançar un error 404 per indicar que no s'han trobat dades.
+### Afegim finalment una gestió d'errors específica per les rutes dinàmiques
+
+Abans havíem acabat posant la funció d'error boundary a `notes._index.tsx`. A nivell de jerarquia de components, en realitat no tenim que la ruta dinàmica estigui "injectada" dins de la nostra pàgina d'index. Per tant si no tenim gestió d'Error Boundary al root, no hi hauria cap "handler" per aquesta pàgina.
+
+Fem-ne un específic per les rutes dinàmiques:
 
 ```tsx
-// Loader: Carrega les notes abans de renderitzar la pàgina
-export const loader: LoaderFunction = async () => {
-  try {
-    const notes: Note[] = (await getStoredNotes()) || [];
-
-    if (!notes || notes.length === 0) {
-      throw Response.json({ error: "Could not find any notes." }, { status: 404, statusText: "Not Found" });
-    }
-    return { notes }; // Wrap notes in an object
-    
-  } catch (error) {
-    console.error("Error loading notes:", error);
-    throw new Response("Failed to load notes", { status: 500 });
-  }
-};
-```
-
-## Al nostre projecte 
-
-Aquí tens una explicació detallada del que hem implementat amb l'error boundary, adaptada perquè els teus estudiants entenguin com funciona i quins beneficis aporta:
-
----
-
-### Com hem implementat l'Error Boundary?**
-
-**A. Loader amb errors específics**
-
-Al nostre loader, hem afegit diferents nivells de gestió d'errors:
-1. **Errors esperats:** Utilitzem `throw json` per llançar errors amb informació específica. Per exemple:
-   ```typescript
-   if (!notes || notes.length === 0) {
-     throw Response.json({ message: "No notes found" }, { status: 404 });
-   }
-   ```
-   Això permet mostrar un missatge personalitzat com "No notes found" i assignar-li un codi d'estat (404).
-
-2. **Errors inesperats:** Si passa un error inesperat, com ara un problema en llegir el fitxer de dades, el capturem i llançem un error genèric:
-   ```typescript
-   catch (error) {
-     throw Response.json({ message: "Failed to load notes" }, { status: 500 });
-   }
-   ```
-   Això assegura que cap error deixa l'aplicació en un estat no controlat.
-
-**B. L'ErrorBoundary**
-
-L'Error Boundary és la peça clau que gestiona aquests errors i decideix com mostrar-los a l'usuari. En el nostre cas:
-1. Utilitzem `useRouteError` per accedir a l'error capturat.
-   ```typescript
-   const error = useRouteError();
-   ```
-
-2. **Errors esperats (llançats amb `throw json`)**
-   Amb `isRouteErrorResponse`, comprovem si l'error és un `Response` creat amb `throw json`:
-   ```typescript
-   if (isRouteErrorResponse(error)) {
-     return (
-       <div>
-         <h1>Oops! Something went wrong.</h1>
-         <p>Status: {error.status}</p>
-         <p>{error.data?.message || "No additional details provided."}</p>
-       </div>
-     );
-   }
-   ```
-   Això ens permet mostrar missatges com "No notes found" o "Failed to load notes", amb els codis d'estat corresponents.
-
-3. **Errors inesperats**
-   Per errors no esperats (com un objecte que no és de tipus `Response`), assegurem que també es gestioni adequadament:
-   ```typescript
-   let errorMessage = "An unknown error occurred.";
-   if (error instanceof Error) {
-     errorMessage = error.message;
-   }
-   ```
-
----
-
-### Beneficis d'aquesta implementació
-
-1. **Millor experiència d'usuari:** Els usuaris veuran missatges clars quan passi un error, en lloc d'una pantalla genèrica o un error desconegut.
-
-2. **Flexibilitat per a desenvolupadors:** 
-   - Amb `throw Response.json`, podem personalitzar els errors i incloure informació addicional. (abans es feia amb "json" i havíem d'importar un hook)
-   - Amb `isRouteErrorResponse`, gestionem fàcilment errors esperats (com un 404).
-
-3. **Unificació de Catch i Error Boundary:** Ara no cal gestionar errors en dues parts diferents; tot es fa des del mateix Error Boundary.
-
----
-
-### Resum
-**Exemple: Loader amb errors**
-
-```typescript
-export const loader: LoaderFunction = async () => {
-  const notes = 0; // Simulem que no hi ha notes
-  if (!notes || notes.length === 0) {
-    throw Response.json({ message: "No notes found" }, { status: 404 });
-  }
-  return Response.json({ notes });
-};
-```
-
-- Si no trobem notes, llancem un error amb `throw json`.
-- L'Error Boundary detectarà aquest error i mostrarà el missatge "No notes found".
-
-**Exemple: ErrorBoundary**
-
-```typescript
+// app/routes/notes.$noteId.tsx
 export function ErrorBoundary() {
   const error = useRouteError();
 
-  if (isRouteErrorResponse(error)) {
+  // Cas 1: Error de resposta 404 (no trobat)
+  // Aquest cas gestiona únicament els errors on l'element buscat no existeix (per exemple, una nota amb un id no trobat).
+  if (isRouteErrorResponse(error) && error.status === 404) {
     return (
-      <div>
-        <h1>Oops!</h1>
-        <p>Status: {error.status}</p>
-        <p>{error.data?.message || "No additional details provided."}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-red-100 text-yellow-900">
+        <h1 className="text-4xl font-bold mb-4">Note not found</h1>
+        <p className="text-lg mb-4">
+          The note you are looking for does not exist.
+        </p>
+        <Link
+          to="/notes"
+          className="text-blue-500 underline hover:text-blue-700"
+        >
+          Back to the Notes
+        </Link>
       </div>
     );
   }
 
-  let errorMessage = "An unknown error occurred.";
-  if (error instanceof Error) {
-    errorMessage = error.message;
-  }
-
-  return (
-    <div>
-      <h1>Uh oh ...</h1>
-      <p>Something went wrong.</p>
-      <pre>{errorMessage}</pre>
-    </div>
-  );
-}
-```
-
-- Amb `useRouteError`, accedim a l'error generat al loader.
-- Mostrem un missatge personalitzat segons el tipus d'error.
-
----
-
-Codi final notes.tsx:
-
-```tsx
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React from "react";
-import NewNote from "../components/NewNote";
-import { ActionFunctionArgs, LoaderFunction, redirect } from "@remix-run/node";
-import { storeNotes, getStoredNotes, Note } from "../data/notes";
-import NoteList from "../components/NoteList";
-import {
-  isRouteErrorResponse,
-  Link,
-  useLoaderData,
-  useRouteError,
-} from "@remix-run/react";
-
-// Component principal
-const NotesPage = (): JSX.Element => {
-  const { notes } = useLoaderData<{ notes: Note[] }>();
-  console.log("Client notes:", notes);
-
-  return (
-    <main>
-      <NewNote />
-      {notes.length > 0 ? (
-        <NoteList notes={notes} />
-      ) : (
-        <p className="text-gray-500 text-center">No hi ha notes disponibles</p>
-      )}
-    </main>
-  );
-};
-
-// Loader: Carrega les notes abans de renderitzar la pàgina
-
-export const loader: LoaderFunction = async () => {
-  try {
-    //const notes: Note[] = (await getStoredNotes()) || [];
-
-    // Simulate getting notes
-    //const notes = 0;
-
-    if (!notes || notes.length === 0) {
-      // Explicitly throw a 404 error with `json`
-      throw Response.json({ message: "No notes found" }, { status: 404 });
-    }
-
-    // Return notes if they exist
-    return Response.json({ notes });
-  } catch (error) {
-    // If error is already a Response, re-throw it
-    if (error instanceof Response) {
-      throw error;
-    }
-
-    // For unexpected errors, throw a 500 status with a generic message
-    console.error("Unexpected error:", error);
-    throw Response.json({ message: "Failed to load notes" }, { status: 500 });
-  }
-};
-
-// Action: Gestiona l'enviament de noves notes
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-
-  const noteData: Note = {
-    id: new Date().toISOString(),
-    title: formData.get("title") as string,
-    content: formData.get("content") as string,
-  };
-
-  if (!noteData.title || noteData.title.trim().length < 5) {
-    // Aquí no podem fer servir funcions del browser com alert() ja que això està corrent al servidor.
-    // En aquest cas, retornem un missatge d'error amb un codi d'estat 400.
-    return Response.json(
-      { error: "Invalid title - must be at least 5 characters long" },
-      { status: 400 } // Indiquem que és un error del client
-    );
-  }
-
-  // Validació bàsica
-  if (!noteData.title || !noteData.content) {
-    return new Response("Title and content are required", { status: 400 });
-  }
-
-  const existingNotes = await getStoredNotes();
-  const updatedNotes: Note[] = [...existingNotes, noteData];
-
-  await storeNotes(updatedNotes);
-
-  // Simulem una petita espera per veure l'estat de "submitting"
-  //await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return redirect("/notes");
-};
-
-//Error Boundaries
-export function ErrorBoundary() {
-  const error = useRouteError();
-
-  // Handle Route Error Responses (e.g., from `json`)
+  // Cas 2: Altres errors de resposta (500, 403, etc.)
+  // Aquest cas cobreix errors del tipus `Response`, però no `404`. Mostra l'estat i un missatge personalitzat si està disponible.
   if (isRouteErrorResponse(error)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-red-100 text-red-900">
-        <h1 className="text-4xl font-bold mb-4">Oops!</h1>
-        <p className="text-lg">Status: {error.status}</p>
-        <p className="text-lg">
-          {error.data?.message || "Something went wrong."}
+        <h1 className="text-4xl font-bold mb-4">Error!</h1>
+        <p className="text-lg mb-4">
+          {`There was an error with status: ${error.status}.`}
         </p>
+        <p>{error.data?.message || "Something went wrong."}</p>
+        <Link
+          to="/notes"
+          className="text-blue-500 underline hover:text-blue-700"
+        >
+          Back to the Notes
+        </Link>
       </div>
     );
   }
 
-  // Handle Unexpected Errors (non-Response errors)
+  // Cas 3: Errors inesperats (no són del tipus `Response`)
+  // Aquí es gestiona qualsevol error que no sigui del tipus `Response`, com errors de JavaScript.
   let errorMessage = "An unknown error occurred.";
   if (error instanceof Error) {
     errorMessage = error.message;
@@ -375,11 +232,128 @@ export function ErrorBoundary() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-red-100 text-red-900">
       <h1 className="text-4xl font-bold mb-4">Uh oh ...</h1>
-      <p className="text-lg">Something went wrong.</p>
+      <p className="text-lg mb-4">Something went wrong.</p>
       <pre className="bg-gray-800 text-white p-4 rounded">{errorMessage}</pre>
+      <Link
+        to="/notes"
+        className="text-blue-500 underline hover:text-blue-700"
+      >
+        Back to the Notes
+      </Link>
     </div>
   );
 }
+```
 
-export default NotesPage;
+Cas 1: Errors 404 tenen un missatge personalitzat per indicar que l'element buscat no existeix.
+Cas 2: Altres errors de resposta (500, 403, etc.) tenen informació més genèrica sobre el codi d'estat i el missatge proporcionat pel servidor.
+Cas 3: Errors inesperats o desconeguts es manegen per assegurar que l'aplicació no es trenqui completament, mostrant un missatge genèric o l'error de JavaScript.
+
+
+## **Extra - Metadata**
+
+### **Què és la Metadata?**
+
+La **metadata** és informació addicional que es pot afegir a les pàgines web per millorar la seva indexació i visibilitat als motors de cerca. Aquesta informació inclou títols, descripcions, paraules clau, imatges i altres dades rellevants per a la pàgina.
+
+### **Què és la funció `meta` a Remix?**
+
+La funció `meta` a Remix s'utilitza per definir les metadades d'una ruta, com ara el títol (`<title>`) i les etiquetes meta (`<meta>`). Això permet configurar informació important per a SEO i experiència d'usuari directament des de la ruta.
+
+### **Com funciona?**
+
+La funció `meta`:
+- Rep com a paràmetre l'objecte retornat pel `loader` (si n'hi ha).
+- Retorna un array d'objectes amb informació sobre el títol i les etiquetes meta.
+
+### **Exemple bàsic:**
+```tsx
+import type { MetaFunction } from "@remix-run/node";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "My App" },
+    { name: "description", content: "This is a great app!" },
+  ];
+};
+```
+
+### **Exemple amb dades dinàmiques:**
+Podem accedir a les dades carregades pel `loader` i utilitzar-les per personalitzar les metadades.
+
+```tsx
+import type { MetaFunction } from "@remix-run/node";
+import type { Note } from "~/data/notes";
+
+export const loader = async () => {
+  const note = { id: "1", title: "Note 1", content: "This is the first note" };
+  return { note };
+};
+
+export const meta: MetaFunction = ({ data }: { data: { note: Note } }) => {
+  if (!data || !data.note) {
+    return [
+      { title: "Note not found" },
+      { name: "description", content: "No details available for this note." },
+    ];
+  }
+
+  return [
+    { title: data.note.title },
+    { name: "description", content: `Details for: ${data.note.title}` },
+  ];
+};
+```
+
+### **On es defineix?**
+- Cada fitxer de ruta pot tenir la seva pròpia funció `meta` per personalitzar el comportament segons les necessitats d'aquesta ruta.
+
+### **Què es genera al navegador?**
+En aquest exemple, el navegador veurà:
+```html
+<head>
+  <title>Note 1</title>
+  <meta name="description" content="Details for: Note 1">
+</head>
+```
+
+### En el nostre codi 
+
+Tenim per una banda `notes._index.tsx` que és la pàgina principal de les notes. Aquesta pàgina no té cap loader, per tant, no té cap dada a carregar. Però podem afegir metadades per a la pàgina principal de les notes.
+
+Afegim únicament
+
+```tsx
+// app/routes/notes._index.tsx
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Notes App" },
+    { name: "description", content: "A simple app to manage your notes." },
+  ];
+};
+```
+
+I en el cas de la pàgina de detalls de les notes, podem afegir metadades dinàmiques basades en la nota seleccionada.
+
+```tsx
+export const meta: MetaFunction = ({
+  data,
+}: {
+  data: { selectedNote: Note };
+}) => {
+  if (!data || !data.selectedNote) {
+    return [
+      { title: "Note not found" },
+      { name: "description", content: "No details available for this note." },
+    ];
+  }
+
+  const { selectedNote } = data;
+
+  return [
+    { title: selectedNote.title },
+    { name: "description", content: `Details for note: ${selectedNote.title}` },
+  ];
+};
 ```

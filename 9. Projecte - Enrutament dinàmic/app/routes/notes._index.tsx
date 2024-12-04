@@ -6,7 +6,7 @@ import { storeNotes, getStoredNotes, Note } from "../data/notes";
 import NoteList from "../components/NoteList";
 import {
   isRouteErrorResponse,
-  Link,
+  MetaFunction,
   useLoaderData,
   useRouteError,
 } from "@remix-run/react";
@@ -32,7 +32,7 @@ const NotesPage = (): JSX.Element => {
 
 export const loader: LoaderFunction = async () => {
   try {
-    //const notes: Note[] = (await getStoredNotes()) || [];
+    const notes: Note[] = (await getStoredNotes()) || [];
 
     // Simulate getting notes
     //const notes = 0;
@@ -91,11 +91,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return redirect("/notes");
 };
 
+// Meta: Informació de la pàgina
+// Qualssevol informació meta fa un merge amb la informació del root.tsx. Sempre ens quedem amb la que tingui el valor més proper en la jerarquia.
+export const meta: MetaFunction = () => {
+  return [{ title: "Notes" }, { description: "A simple note-taking app" }];
+};
+
 //Error Boundaries
 export function ErrorBoundary() {
+  console.log("ErrorBoundary");
   const error = useRouteError();
 
-  // Handle Route Error Responses (e.g., from `json`)
+  // Per a errors del tipus Response (404, 500, etc.)
   if (isRouteErrorResponse(error)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-red-100 text-red-900">
@@ -108,7 +115,7 @@ export function ErrorBoundary() {
     );
   }
 
-  // Handle Unexpected Errors (non-Response errors)
+  // Per a errors inesperats
   let errorMessage = "An unknown error occurred.";
   if (error instanceof Error) {
     errorMessage = error.message;
